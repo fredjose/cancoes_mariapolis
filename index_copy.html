@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leitor — Canções da Mariápolis</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #e8e8e8; }
+  body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+
+  .toolbar {
+    position: sticky; top: 0; z-index: 1000;
+    width: 100%; box-sizing: border-box;
+    background: #2c3e50; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; padding: 10px;
+    font-family: sans-serif;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  }
+  .toolbar button {
+    background: #3498db; color: #fff; border: 0;
+    padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;
+  }
+  .toolbar button:hover { background: #2980b9; }
+  .toolbar button:disabled { background: #7f8c8d; cursor: not-allowed; }
+  .toolbar input {
+    width: 70px; padding: 6px; text-align: center;
+    border: 0; border-radius: 4px; font-size: 14px;
+  }
+
+  #conteudo {
+    flex: 1; display: flex; justify-content: center;
+    padding: 8px; width: 100%; box-sizing: border-box;
+  }
+
+  .erro {
+    color: #c0392b; font-family: sans-serif;
+    padding: 40px; text-align: center;
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button id="btnAnterior">◀ Anterior</button>
+    <label>Página <input id="inputPagina" type="number" min="1" value="1"></label>
+    <span id="totalPaginas">/ ?</span>
+    <button id="btnProxima">Próxima ▶</button>
+  </div>
+
+  <div id="conteudo"></div>
+
+<script>
+(async function () {
+  const params = new URLSearchParams(location.search);
+  let paginaAtual = parseInt(params.get('pagina') || '1', 10);
+  if (isNaN(paginaAtual) || paginaAtual < 1) paginaAtual = 1;
+
+  const conteudoEl = document.getElementById('conteudo');
+  const inputPagina = document.getElementById('inputPagina');
+  const totalPaginasEl = document.getElementById('totalPaginas');
+  const btnAnterior = document.getElementById('btnAnterior');
+  const btnProxima = document.getElementById('btnProxima');
+
+  const ARQUIVO_LIVRO = 'livro.html'; // <-- mude aqui se o nome for outro
+
+  // 1. Busca o arquivo do livro
+  let html;
+  try {
+    const resp = await fetch(ARQUIVO_LIVRO);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    html = await resp.text();
+  } catch (e) {
+    conteudoEl.innerHTML =
+      '<div class="erro">Erro ao carregar ' + ARQUIVO_LIVRO + ':\n' + e.message +
+      '\n\nVerifique se está acessando via http:// (não file://) e se o arquivo está na mesma pasta.</div>';
+    return;
+  }
+
+  const docLivro = new DOMParser().parseFromString(html, 'text/html');
+
+  // 2. Copia TODOS os <style> do livro para o <head> do index
+  docLivro.querySelectorAll('style').forEach((st, i) => {
+    const s = document.createElement('style');
+    s.dataset.origem = 'livro-' + i;
+    s.textContent = st.textContent;
+    document.head.appendChild(s);
+  });
+
+  // 3. Copia os <link rel="stylesheet"> (se houver)
+  docLivro.querySelectorAll('link[rel="stylesheet"]').forEach(ln => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = ln.href;
+    document.head.appendChild(l);
+  });
+
+  // 4. Coleta as páginas
+  const paginas = Array.from(docLivro.querySelectorAll('.page'));
+  const totalPaginas = paginas.length;
+  totalPaginasEl.textContent = '/ ' + totalPaginas;
+
+  if (totalPaginas === 0) {
+    conteudoEl.innerHTML = '<div class="erro">Nenhuma .page encontrada no arquivo.</div>';
+    return;
+  }
+
+  // 5. Renderiza a página pedida
+  function renderizarPagina(n) {
+    if (n < 1 || n > totalPaginas) {
+      conteudoEl.innerHTML = '<div class="erro">Página ' + n +
+        ' não existe (total: ' + totalPaginas + ')</div>';
+      return;
+    }
+    conteudoEl.innerHTML = '';
+    conteudoEl.appendChild(paginas[n - 1].cloneNode(true));
+
+    inputPagina.value = n;
+    btnAnterior.disabled = (n === 1);
+    btnProxima.disabled = (n === totalPaginas);
+
+    const url = new URL(location);
+    url.searchParams.set('pagina', n);
+    history.replaceState(null, '', url);
+  }
+
+  btnAnterior.addEventListener('click', () => {
+    if (paginaAtual > 1) { paginaAtual--; renderizarPagina(paginaAtual); }
+  });
+  btnProxima.addEventListener('click', () => {
+    if (paginaAtual < totalPaginas) { paginaAtual++; renderizarPagina(paginaAtual); }
+  });
+  inputPagina.addEventListener('change', () => {
+    const n = parseInt(inputPagina.value, 10);
+    if (!isNaN(n)) { paginaAtual = n; renderizarPagina(n); }
+  });
+
+  renderizarPagina(paginaAtual);
+})();
+</script>
+
+</body>
+</html>

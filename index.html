@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Canções da Mariápolis</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #2a2a2a; min-height: 100vh; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    color: #eee;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  /* ========== TOPO ========== */
+  .topo {
+    position: sticky; top: 0; z-index: 1000;
+    width: 100%;
+    background: #1a1a1a;
+    color: #f4e4c1;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 10px 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.5);
+    font-family: Georgia, serif;
+    flex-wrap: wrap;
+  }
+  .topo h1 {
+    margin: 0; font-size: 18px; font-weight: normal;
+    letter-spacing: 1px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .topo .controles {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .topo button {
+    background: transparent;
+    color: #f4e4c1;
+    border: 1px solid #f4e4c1;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    font-size: 14px;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .topo button:hover:not(:disabled) { background: #f4e4c1; color: #1a1a1a; }
+  .topo button.ativo { background: #f4e4c1; color: #1a1a1a; }
+  .topo button:disabled { opacity: .3; cursor: not-allowed; }
+
+  /* Separador visual entre grupos de botões */
+  .topo .separador {
+    width: 1px; height: 22px; background: #f4e4c1; opacity: .25; margin: 0 4px;
+  }
+
+  /* Campo de busca por página */
+  .busca-pagina {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid #f4e4c1;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+  .busca-pagina label {
+    color: #f4e4c1; font-size: 13px; opacity: .8;
+  }
+  .busca-pagina input {
+    width: 60px;
+    background: transparent;
+    color: #f4e4c1;
+    border: 0;
+    text-align: center;
+    font-family: Georgia, serif;
+    font-size: 14px;
+    padding: 2px;
+    outline: none;
+  }
+  .busca-pagina input::-webkit-outer-spin-button,
+  .busca-pagina input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .busca-pagina .total {
+    color: #f4e4c1; opacity: .6; font-size: 13px; white-space: nowrap;
+  }
+  .busca-pagina button {
+    padding: 3px 10px; font-size: 12px;
+  }
+
+  /* ========== PALCO ========== */
+  #palco {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    width: 100%;
+  }
+
+  #palco .page {
+    margin: 0 auto !important;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.05),
+      0 8px 24px rgba(0,0,0,.6),
+      0 20px 60px rgba(0,0,0,.4) !important;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  /* ========== CAPA ========== */
+  .capa-wrapper {
+    display: flex; flex-direction: column; align-items: center; gap: 24px;
+    animation: fadeIn .5s ease;
+  }
+  .capa-wrapper .page { transform: scale(1.15); transform-origin: top center; margin-bottom: 60px !important; }
+  .capa-wrapper .botoes-capa {
+    display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap; justify-content: center;
+  }
+  .capa-wrapper .botoes-capa button {
+    background: #f4e4c1; color: #1a1a1a;
+    border: 0; padding: 12px 28px;
+    border-radius: 4px; cursor: pointer;
+    font-family: Georgia, serif; font-size: 16px; letter-spacing: 1px;
+    transition: transform .15s;
+  }
+  .capa-wrapper .botoes-capa button:hover { transform: translateY(-2px); }
+  .capa-wrapper .botoes-capa button.secundario {
+    background: transparent; color: #f4e4c1;
+    border: 1px solid #f4e4c1;
+  }
+
+  /* ========== ÍNDICE ========== */
+  .indice-wrapper {
+    width: 100%; max-width: 900px;
+    animation: fadeIn .5s ease;
+  }
+  .indice-wrapper h2 {
+    text-align: center; color: #f4e4c1; font-weight: normal;
+    letter-spacing: 3px; margin: 0 0 8px; font-size: 22px;
+  }
+  .indice-wrapper p.sub {
+    text-align: center; color: #aaa; margin: 0 0 32px;
+    font-size: 14px; font-style: italic;
+  }
+  .indice-paginas {
+    display: flex; flex-direction: column; align-items: center; gap: 24px;
+  }
+  .indice-item {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .indice-item .page {
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .indice-item .page:hover {
+    transform: scale(1.02);
+    box-shadow:
+      0 0 0 2px #f4e4c1,
+      0 12px 32px rgba(0,0,0,.7) !important;
+  }
+  .indice-item .rotulo {
+    color: #f4e4c1; font-size: 14px; letter-spacing: 2px;
+    text-transform: uppercase; cursor: pointer;
+  }
+  .indice-item .rotulo small {
+    display: block; color: #888; font-size: 11px;
+    letter-spacing: 0; text-transform: none; margin-top: 2px;
+  }
+
+  /* ========== LEITURA ========== */
+  .leitura-wrapper {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    animation: fadeIn .3s ease;
+  }
+
+  /* ========== ERRO ========== */
+  .erro {
+    color: #ff8888; padding: 40px; text-align: center;
+    white-space: pre-wrap; font-family: sans-serif; max-width: 600px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 700px) {
+    .topo { padding: 10px 12px; gap: 8px; }
+    .topo h1 { font-size: 15px; width: 100%; text-align: center; }
+    .topo .controles { width: 100%; justify-content: center; }
+    .topo button { padding: 5px 10px; font-size: 12px; }
+    .busca-pagina input { width: 50px; font-size: 13px; }
+    .topo .separador { display: none; }
+    .capa-wrapper .page { transform: scale(.9); margin-bottom: 20px !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="topo">
+    <h1>✦ Canções da Mariápolis</h1>
+    <div class="controles">
+      <button id="btnCapa">Capa</button>
+      <button id="btnIndice">Índice</button>
+
+      <div class="separador"></div>
+
+      <!-- ◀ ANTERIOR -->
+      <button id="btnAnterior" title="Página anterior (←)">◀ Anterior</button>
+
+      <!-- Busca por página -->
+      <div class="busca-pagina">
+        <label>Página</label>
+        <input id="inputPaginaGlobal" type="number" min="1" value="1">
+        <span class="total" id="totalGlobal">/ ?</span>
+        <button id="btnIr">Ir</button>
+      </div>
+
+      <!-- PRÓXIMA ▶ -->
+      <button id="btnProxima" title="Próxima página (→)">Próxima ▶</button>
+    </div>
+  </div>
+
+  <div id="palco"></div>
+
+<script>
+(async function () {
+  const palco = document.getElementById('palco');
+  const btnCapa = document.getElementById('btnCapa');
+  const btnIndice = document.getElementById('btnIndice');
+  const btnAnterior = document.getElementById('btnAnterior');
+  const btnProxima = document.getElementById('btnProxima');
+  const inputPaginaGlobal = document.getElementById('inputPaginaGlobal');
+  const totalGlobal = document.getElementById('totalGlobal');
+  const btnIr = document.getElementById('btnIr');
+
+  const ARQUIVO_LIVRO = 'livro.html';
+
+  // ============================================================
+  // 📌 Configuração
+  // ============================================================
+  const PAGINA_CAPA   = 3;
+  const PAGINAS_INDICE = [181, 182, 183, 184];
+
+  // Estado: em que página estamos AGORA (ou null se não estamos em leitura)
+  let paginaAtual = null;
+
+  // ============================================================
+  // 1. Carrega o livro
+  // ============================================================
+  let htmlLivro;
+  try {
+    const resp = await fetch(ARQUIVO_LIVRO);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    htmlLivro = await resp.text();
+  } catch (e) {
+    palco.innerHTML =
+      '<div class="erro">Erro ao carregar ' + ARQUIVO_LIVRO + ':\n' + e.message +
+      '\n\nVerifique se você está acessando via http:// e se o arquivo está na mesma pasta.</div>';
+    return;
+  }
+
+  const docLivro = new DOMParser().parseFromString(htmlLivro, 'text/html');
+
+  // 2. Copia estilos
+  docLivro.querySelectorAll('style').forEach(st => {
+    const s = document.createElement('style');
+    s.textContent = st.textContent;
+    document.head.appendChild(s);
+  });
+  docLivro.querySelectorAll('link[rel="stylesheet"]').forEach(ln => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = ln.href;
+    document.head.appendChild(l);
+  });
+
+  // 3. Coleta páginas
+  const paginas = Array.from(docLivro.querySelectorAll('.page'));
+  const totalPaginas = paginas.length;
+  totalGlobal.textContent = '/ ' + totalPaginas;
+  inputPaginaGlobal.max = totalPaginas;
+
+  if (totalPaginas === 0) {
+    palco.innerHTML = '<div class="erro">Nenhuma página encontrada.</div>';
+    return;
+  }
+
+  // ============================================================
+  // 4. Helpers de estado
+  // ============================================================
+  function atualizarBotoesNavegacao() {
+    // Se não estamos em leitura, os botões ficam desabilitados
+    if (paginaAtual === null) {
+      btnAnterior.disabled = true;
+      btnProxima.disabled = true;
+      return;
+    }
+    btnAnterior.disabled = (paginaAtual <= 1);
+    btnProxima.disabled = (paginaAtual >= totalPaginas);
+  }
+
+  function atualizarBusca(n) {
+    inputPaginaGlobal.value = n;
+  }
+
+  function limparBusca() {
+    inputPaginaGlobal.value = '';
+  }
+
+  // ============================================================
+  // 5. Tela da CAPA
+  // ============================================================
+  function mostrarCapa() {
+    const p = paginas[PAGINA_CAPA - 1];
+    if (!p) { palco.innerHTML = '<div class="erro">Capa não encontrada.</div>'; return; }
+
+    paginaAtual = null;
+    palco.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'capa-wrapper';
+
+    wrap.appendChild(p.cloneNode(true));
+
+    const btns = document.createElement('div');
+    btns.className = 'botoes-capa';
+    btns.innerHTML =
+      '<button id="irIndice">📖 Abrir o índice</button>' +
+      '<button id="irLeitura" class="secundario">Ler desde o início</button>';
+    wrap.appendChild(btns);
+    palco.appendChild(wrap);
+
+    document.getElementById('irIndice').onclick = mostrarIndice;
+    document.getElementById('irLeitura').onclick = () => mostrarLeitura(1);
+
+    btnCapa.classList.add('ativo');
+    btnIndice.classList.remove('ativo');
+    document.title = 'Capa — Canções da Mariápolis';
+    limparBusca();
+    atualizarBotoesNavegacao();
+    history.replaceState(null, '', location.pathname);
+  }
+
+  // ============================================================
+  // 6. Tela do ÍNDICE
+  // ============================================================
+  function mostrarIndice() {
+    paginaAtual = null;
+    palco.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'indice-wrapper';
+
+    wrap.innerHTML =
+      '<h2>Índice</h2>' +
+      '<p class="sub">Toque em uma página para começar a ler</p>';
+
+    const lista = document.createElement('div');
+    lista.className = 'indice-paginas';
+
+    PAGINAS_INDICE.forEach(numPag => {
+      const p = paginas[numPag - 1];
+      if (!p) return;
+      const item = document.createElement('div');
+      item.className = 'indice-item';
+
+      const pg = p.cloneNode(true);
+      pg.title = 'Ler a partir da página ' + numPag;
+      item.appendChild(pg);
+
+      const rot = document.createElement('div');
+      rot.className = 'rotulo';
+      rot.innerHTML = 'Página ' + numPag +
+        '<small>Clique para ler a partir daqui</small>';
+      item.appendChild(rot);
+
+      const irLer = () => mostrarLeitura(numPag);
+      pg.addEventListener('click', irLer);
+      rot.addEventListener('click', irLer);
+
+      lista.appendChild(item);
+    });
+
+    wrap.appendChild(lista);
+    palco.appendChild(wrap);
+
+    btnIndice.classList.add('ativo');
+    btnCapa.classList.remove('ativo');
+    document.title = 'Índice — Canções da Mariápolis';
+    limparBusca();
+    atualizarBotoesNavegacao();
+    history.replaceState(null, '', location.pathname + '?tela=indice');
+  }
+
+  // ============================================================
+  // 7. Tela de LEITURA
+  // ============================================================
+  function mostrarLeitura(n) {
+    n = parseInt(n, 10);
+    if (isNaN(n) || n < 1 || n > totalPaginas) {
+      palco.innerHTML = '<div class="erro">Página ' + n + ' não existe (total: ' + totalPaginas + ')</div>';
+      return;
+    }
+
+    paginaAtual = n;
+    palco.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'leitura-wrapper';
+
+    wrap.appendChild(paginas[n - 1].cloneNode(true));
+    palco.appendChild(wrap);
+
+    btnCapa.classList.remove('ativo');
+    btnIndice.classList.remove('ativo');
+    document.title = 'Página ' + n + ' — Canções da Mariápolis';
+    atualizarBusca(n);
+    atualizarBotoesNavegacao();
+    history.replaceState(null, '', location.pathname + '?pagina=' + n);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ============================================================
+  // 8. Botões do topo
+  // ============================================================
+  btnCapa.onclick   = mostrarCapa;
+  btnIndice.onclick = mostrarIndice;
+
+  // -------- ANTERIOR --------
+  btnAnterior.onclick = () => {
+    if (paginaAtual !== null && paginaAtual > 1) {
+      mostrarLeitura(paginaAtual - 1);
+    }
+  };
+
+  // -------- PRÓXIMA --------
+  btnProxima.onclick = () => {
+    if (paginaAtual !== null && paginaAtual < totalPaginas) {
+      mostrarLeitura(paginaAtual + 1);
+    }
+  };
+
+  // -------- BUSCA GLOBAL --------
+  function irParaPaginaDigitada() {
+    const v = parseInt(inputPaginaGlobal.value, 10);
+    if (isNaN(v)) return;
+    mostrarLeitura(v);
+  }
+  btnIr.onclick = irParaPaginaDigitada;
+  inputPaginaGlobal.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      irParaPaginaDigitada();
+    }
+  });
+
+  // ============================================================
+  // 9. Roteamento inicial
+  // ============================================================
+  const params = new URLSearchParams(location.search);
+  const tela = params.get('tela');
+  const pag  = parseInt(params.get('pagina'), 10);
+
+  if (tela === 'indice') {
+    mostrarIndice();
+  } else if (!isNaN(pag)) {
+    mostrarLeitura(pag);
+  } else {
+    mostrarCapa();
+  }
+
+  // ============================================================
+  // 10. Atalhos de teclado
+  // ============================================================
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+
+    // Se não está em leitura, não faz nada
+    if (paginaAtual === null) return;
+
+    if (e.key === 'ArrowLeft')  { if (paginaAtual > 1) mostrarLeitura(paginaAtual - 1); }
+    if (e.key === 'ArrowRight') { if (paginaAtual < totalPaginas) mostrarLeitura(paginaAtual + 1); }
+    if (e.key === 'Home') mostrarLeitura(1);
+    if (e.key === 'End')  mostrarLeitura(totalPaginas);
+  });
+
+})();
+</script>
+
+</body>
+</html>
